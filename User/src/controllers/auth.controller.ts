@@ -87,10 +87,10 @@ export class AuthController implements IAuthController {
       const { accessToken, refreshToken, ...userData } = user;
       res.cookie("accessToken", user.accessToken, {
         httpOnly: true,
-        // secure: true,
-        // sameSite: "none",
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
+        // secure: false,
+        // sameSite: "lax",
         path: '/'
       });
 
