@@ -2,6 +2,8 @@ import { Server } from "socket.io";
 import http from "http";
 import { socketAuthMiddleware } from "./socket.middleware.js";
 import { handleSocketConnection } from "./socket.handlers.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 let io: Server;
 

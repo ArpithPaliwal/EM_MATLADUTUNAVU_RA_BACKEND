@@ -3,6 +3,8 @@ import userRoutes from "./routes/user.routes.js";
 import cors from "cors";
 import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "./utils/apiError.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 
