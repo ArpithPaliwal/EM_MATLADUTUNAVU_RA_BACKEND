@@ -5,15 +5,21 @@ import { handleSocketConnection } from "./socket.handlers.js";
 
 let io: Server;
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://em-matladutunavu-ra-frontend.vercel.app",
-];
+const allowedOrigins =
+  process.env.CORS_ORIGIN?.split(",").map(o => o.trim()) || [];
 
 export const initSocketServer = (server: http.Server): Server => {
   io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, origin);
+        }
+
+        return callback(null, false);
+      },
       credentials: true,
     },
   });

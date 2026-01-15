@@ -7,22 +7,26 @@ import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "./utils/apiError.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://em-matladutunavu-ra-frontend.vercel.app",
-];
 
+// Allowed origins from env
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.trim());
+
+// CORS middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      // Allow requests with no origin (Postman, mobile apps)
+      if (!origin || allowedOrigins?.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked"));
       }
-      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
