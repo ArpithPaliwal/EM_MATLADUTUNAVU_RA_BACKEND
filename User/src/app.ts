@@ -5,7 +5,7 @@ import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "./utils/apiError.js";
 import dotenv from "dotenv";
 dotenv.config();
-
+console.log("CORS_ORIGIN AT RUNTIME:", process.env.CORS_ORIGIN);
 const app = express();
 app.use((req, res, next) => {
   console.log("REQ:", req.method, req.originalUrl);
