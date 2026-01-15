@@ -17,13 +17,10 @@ const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.
 // CORS middleware
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (Postman, mobile apps)
-      if (!origin || allowedOrigins?.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS blocked"));
-      }
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins?.includes(origin)) return cb(null, origin);
+      return cb(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
