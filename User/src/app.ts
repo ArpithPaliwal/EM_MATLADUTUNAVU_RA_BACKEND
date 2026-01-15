@@ -8,7 +8,7 @@ const app=express();
 
 app.use(
   cors({
-    origin:["http://localhost:5173","https://em-matladutunavu-ra-frontend.vercel.app/"],   // your frontend
+    origin:["http://localhost:5173","https://em-matladutunavu-ra-frontend.vercel.app"],   // your frontend
     credentials: true,
   })
 );
