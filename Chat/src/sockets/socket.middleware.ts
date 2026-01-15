@@ -29,24 +29,32 @@ export const socketAuthMiddleware = (
     req.cookies.accessToken = token;
   }
 
-  // 5. Fake response for JWT middleware
-  const res = {
-    status: () => ({
-      json: () => {},
-    }),
-  };
+  // // 5. Fake response for JWT middleware
+  // const res = {
+  //   status: () => ({
+  //     json: () => {},
+  //   }),
+  // };
 
-  // 6. Verify JWT using your existing middleware
-  verifyJWT(req, res as any, (err?: any) => {
-    if (err) return next(new Error("Unauthorized socket connection"));
+  // // 6. Verify JWT using your existing middleware
+  // verifyJWT(req, res as any, (err?: any) => {
+  //   if (err) return next(new Error("Unauthorized socket connection"));
 
-    const user = req.user;
-    if (!user?._id) return next(new Error("Unauthorized socket connection"));
+  //   const user = req.user;
+  //   if (!user?._id) return next(new Error("Unauthorized socket connection"));
 
-    // 7. Attach identity to socket
-    socket.data.userId = user._id.toString();
-    socket.data.activeConversations = new Set<string>();
+  //   // 7. Attach identity to socket
+  //   socket.data.userId = user._id.toString();
+  //   socket.data.activeConversations = new Set<string>();
 
-    next();
-  });
+  //   next();
+  // });
+  verifyJWT(req, null as any, (err?: any) => {
+        if (err) return next(new Error('Unauthorized'));
+        const user = req.user;
+        if (!user?._id) return next(new Error('Unauthorized'));
+        socket.data.userId = user._id.toString();
+        socket.data.activeConversations = new Set<string>();
+        next();
+    });
 };
