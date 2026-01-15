@@ -6,37 +6,42 @@ import cookieParser from "cookie-parser";
 import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "./utils/apiError.js";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const app = express();
 app.set("trust proxy", 1);
 
+// 1. Parse Allowed Origins
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.trim()) || [];
 
-// Allowed origins from env
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.trim());
+// 2. Define Configuration ONCE
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log(`Blocked by CORS: ${origin}`);
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
 
-// CORS middleware
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (allowedOrigins?.includes(origin)) return cb(null, origin);
-      return cb(null, false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// 3. Apply Middleware (Handles Preflight automatically)
+app.use(cors(corsOptions));
 
-// important for preflight
-app.options("*", cors());
+// REMOVED: app.options("*", cors()); <--- This was the cause of the bug
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.use(cookieParser());
+app.use(cookieParser()); // Keep cookie parser
 
+// Chat Routes
 app.use("/api/v1/chat/conversations", chatRoutes);
 app.use("/api/v1/chat/messages", messageRoutes);
 

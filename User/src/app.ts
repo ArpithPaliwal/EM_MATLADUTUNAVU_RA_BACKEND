@@ -4,36 +4,43 @@ import cors from "cors";
 import type { Request, Response, NextFunction } from "express";
 import { ApiError } from "./utils/apiError.js";
 import dotenv from "dotenv";
+
 dotenv.config();
-console.log("CORS_ORIGIN AT RUNTIME:", process.env.CORS_ORIGIN);
+
 const app = express();
-app.use((req, res, next) => {
-  console.log("REQ:", req.method, req.originalUrl);
-  next();
-});
+
+// 1. Debugging: This will print inside your SERVER logs (check AWS/Render logs, not browser)
+console.log("Allowed Origins:", process.env.CORS_ORIGIN);
+
+// 2. Parse Allowed Origins
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.trim()) || [];
+
+// 3. Define the Configuration ONCE
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps, Postman, or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log(`Blocked by CORS: ${origin}`); // Helpful for debugging
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
 
 app.set("trust proxy", 1);
 
+// 4. Apply Middleware (Handles Preflight automatically)
+app.use(cors(corsOptions));
 
-// Allowed origins from env
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map(origin => origin.trim());
-
-// CORS middleware
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (allowedOrigins?.includes(origin)) return cb(null, origin);
-      return cb(null, false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// important for preflight
-app.options("*", cors());
+// Remove this line! It overrides the config above with defaults.
+// app.options("*", cors()); <--- DELETE THIS
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -50,7 +57,6 @@ export function errorHandler(
   _next: NextFunction
 ) {
   const statusCode = err.statusCode ?? 500;
-
   return res.status(statusCode).json({
     success: err.success ?? false,
     message: err.message ?? "Internal server error",
