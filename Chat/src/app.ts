@@ -8,7 +8,8 @@ import { ApiError } from './utils/apiError.js';
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:5173",   // your frontend
+    origin: ["http://localhost:5173",
+    "https://em-matladutunavu-ra-frontend.vercel.app/" ],  // your frontend
     credentials: true,
   })
 );
