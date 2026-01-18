@@ -8,7 +8,7 @@ export const verifyJWT = asyncHandler(
         if (!accessToken) { 
             throw new ApiError(401, "Access token is missing");
         }   
-        const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_TOKEN_SECRET as string);
+        const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET as string);
         req.user = decoded;
         next();
     } catch (error) {
