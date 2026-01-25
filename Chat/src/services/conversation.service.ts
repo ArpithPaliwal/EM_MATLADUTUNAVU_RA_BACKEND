@@ -12,6 +12,7 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js
 import type { ConversationWithDetails } from "../dtos/responseGetConversatiuonListWithDetails.js";
 import type { ConversationBase } from "../dtos/responseGetConversationListBase.js";
 import type { UserBulkResponse } from "../dtos/userDetailsSummary.dto.js";
+import { Conversation } from "../models/conversation.model.js";
 function getTheOtherMemberId(members: string[], userId: string) {
     return members.find(m => m.toString() !== userId.toString())!;
 }
@@ -45,7 +46,7 @@ export class ConversationService implements IConversationService {
             throw new ApiError(404, "User does not exist");
         }
 
-        const memberId = member.id || member._id;
+        const memberId = member?.id || member?._id;
         const updatedData = {
             ...data,
             memberId
@@ -68,9 +69,9 @@ export class ConversationService implements IConversationService {
 
             session.startTransaction();
             const conversation = await this.conversationrepository.createPrivateConversation(updatedData, session);
-
-            await this.conversationParticipantService.createConversationParticipants({ userIds: [userId, member?._id], conversationId: conversation._id }, session);
-
+            if (Conversation) {
+                await this.conversationParticipantService.createConversationParticipants({ userIds: [userId, memberId], conversationId: conversation?._id }, session);
+            }
             await session.commitTransaction();
 
             return conversation;
@@ -172,57 +173,57 @@ export class ConversationService implements IConversationService {
         const updatedConversation = await this.conversationrepository.updateConversationLastMessage(conversationId, messageId, messageText, senderId, createdAt);
         return updatedConversation;
     }
-async updateGroupAvatar(
-  userId: string,
-  createdBy: string,
-  groupId: string,
-  groupAvatarFile: string
-) {
-  if (userId !== createdBy) {
-    throw new ApiError(400, "you are not authorized to change the groupAvatar");
-  }
-   if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(groupId)) {
-      throw new Error("Invalid userId or groupId");
+    async updateGroupAvatar(
+        userId: string,
+        createdBy: string,
+        groupId: string,
+        groupAvatarFile: string
+    ) {
+        if (userId !== createdBy) {
+            throw new ApiError(400, "you are not authorized to change the groupAvatar");
+        }
+        if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+            throw new Error("Invalid userId or groupId");
+        }
+        if (!groupAvatarFile) {
+            throw new ApiError(400, "failed to upload groupavatar to multer");
+        }
+
+        const avatarCloudinaryData = await uploadOnCloudinary(groupAvatarFile);
+
+        if (!avatarCloudinaryData) {
+            throw new ApiError(500, "Failed to upload avatar on Cloudinary");
+        }
+
+        const groupAvatarurl = avatarCloudinaryData.secure_url;
+        const groupAvatarPublicId = avatarCloudinaryData.public_id;
+
+        const { updatedGroup, previousAvatar } =
+            await this.conversationrepository.updateGroupAvatar(
+                groupId,
+                groupAvatarurl,
+                groupAvatarPublicId
+            );
+
+
+        if (previousAvatar?.publicId) {
+            deleteFromCloudinary(previousAvatar.publicId)
+                .catch(err => console.log("Previous avatar delete failed:", err.message));
+        }
+
+        return updatedGroup;
     }
-  if (!groupAvatarFile) {
-    throw new ApiError(400, "failed to upload groupavatar to multer");
-  }
 
-  const avatarCloudinaryData = await uploadOnCloudinary(groupAvatarFile);
+    async updateGroupName(userId: string, createdBy: string, groupId: string, name: string): Promise<any> {
+        if (userId !== createdBy) {
+            throw new ApiError(400, "you are not authorized to change the group name");
+        }
+        const updateConversation = await this.conversationrepository.updatedGroupName(groupId, name)
 
-  if (!avatarCloudinaryData) {
-    throw new ApiError(500, "Failed to upload avatar on Cloudinary");
-  }
-
-  const groupAvatarurl = avatarCloudinaryData.secure_url;
-  const groupAvatarPublicId = avatarCloudinaryData.public_id;
-
-  const { updatedGroup, previousAvatar } =
-    await this.conversationrepository.updateGroupAvatar(
-      groupId,
-      groupAvatarurl,
-      groupAvatarPublicId
-    );
-
-  
-  if (previousAvatar?.publicId) {
-    deleteFromCloudinary(previousAvatar.publicId)
-      .catch(err => console.log("Previous avatar delete failed:", err.message));
-  }
-
-  return updatedGroup;
-}
-
-async updateGroupName(userId: string, createdBy: string, groupId: string, name: string): Promise<any> {
-    if (userId !== createdBy) {
-    throw new ApiError(400, "you are not authorized to change the group name");
-  }
-  const updateConversation = await this.conversationrepository.updatedGroupName(groupId,name)
-
-  return updateConversation
-}
-async leaveGroup(userId: string, groupId: string): Promise<any> {
-    await this.conversationrepository.leaveGroup(userId,groupId)
-}
+        return updateConversation
+    }
+    async leaveGroup(userId: string, groupId: string): Promise<any> {
+        await this.conversationrepository.leaveGroup(userId, groupId)
+    }
 }
 
