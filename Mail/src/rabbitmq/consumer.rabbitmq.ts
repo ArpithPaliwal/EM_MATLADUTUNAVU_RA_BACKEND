@@ -5,32 +5,34 @@ const EXCHANGE = "mail.exchange";
 const QUEUE = "mail.queue";
 const ROUTING_KEY = "mail.send";
 
-const user = process.env.EMAIL_USER;
-const pass = process.env.EMAIL_PASS;
-
-if (!user || !pass) {
-  throw new Error("Mail credentials missing");
-}
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: { user, pass },
-});
-
-// 🔴 VERIFY SMTP ON BOOT (FAIL FAST)
-await transporter.verify();
-console.log("SMTP verified and ready");
-
 export async function startMailConsumer(): Promise<void> {
+  // ✅ READ ENV ONLY INSIDE FUNCTION
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+
+  if (!user || !pass) {
+    throw new Error("Mail credentials missing");
+  }
+
+  // ✅ CREATE TRANSPORTER AFTER ENV IS READY
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+  });
+
+  // ✅ VERIFY SMTP ON SERVICE START
+  await transporter.verify();
+  console.log("SMTP verified and ready");
+
   const channel = getChannel();
 
   await channel.assertExchange(EXCHANGE, "direct", { durable: true });
   await channel.assertQueue(QUEUE, { durable: true });
   await channel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
 
-
+  // 🔴 CRITICAL
   channel.prefetch(1);
 
   console.log("Mail consumer waiting for messages");
@@ -52,13 +54,13 @@ export async function startMailConsumer(): Promise<void> {
 
       console.log(`Mail sent to ${to}`);
 
-      
+      // ✅ ACK ON SUCCESS
       channel.ack(message);
 
     } catch (error) {
       console.error("Mail send failed:", error);
 
-      
+      // ❌ NACK ON FAILURE (NO REQUEUE)
       channel.nack(message, false, false);
     }
   });
