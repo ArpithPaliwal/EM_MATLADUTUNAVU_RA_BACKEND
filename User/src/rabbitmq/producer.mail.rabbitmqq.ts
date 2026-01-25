@@ -1,22 +1,18 @@
-import type { MailPayload } from "../dtos/mailPayload.dto.js";
 import { getChannel } from "./connection.rabbitmq.js";
+import type { MailPayload } from "../dtos/mailPayload.dto.js";
 
-const exchange: string = "mail.exchange";
-const routingKey = "mail.send";
+const EXCHANGE = "mail.exchange";
+const ROUTING_KEY = "mail.send";
 
+export async function sendMail(payload: MailPayload): Promise<void> {
+  const channel = getChannel();
 
-export async function sendMail(message: MailPayload): Promise<void> {
-    const channel = getChannel();
+  channel.publish(
+    EXCHANGE,
+    ROUTING_KEY,
+    Buffer.from(JSON.stringify(payload)),
+    { persistent: true }
+  );
 
-    const published = channel.publish(
-        exchange,                 // direct exchange
-        routingKey,                    // routing key 
-        Buffer.from(JSON.stringify(message)),
-        {
-            persistent: true
-        }
-    );
-     if (!published) {
-    console.warn("Mail message buffered due to backpressure");
-  }
+  await channel.waitForConfirms();
 }

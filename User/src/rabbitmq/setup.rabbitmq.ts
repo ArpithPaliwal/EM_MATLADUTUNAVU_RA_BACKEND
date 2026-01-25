@@ -1,13 +1,11 @@
 import { getChannel } from "./connection.rabbitmq.js";
 
-export async function setupRabbit() {
+export async function setupRabbit(): Promise<void> {
   const channel = getChannel();
 
-  await channel.assertExchange("chat.events", "fanout", {
-    durable: true
+  await channel.assertExchange("mail.exchange", "direct", {
+    durable: true,
   });
 
-  await channel.assertExchange("mail.events", "direct", {
-    durable: true
-  });
+  console.log("RabbitMQ exchanges asserted");
 }

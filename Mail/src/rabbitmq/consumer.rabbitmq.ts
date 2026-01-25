@@ -1,52 +1,57 @@
 import { getChannel } from "./connection.rabbitmq.js";
-import nodemailer from "nodemailer"
-const exchange: string = "mail.exchange";
-const queue: string = "mailqueue";
-const routingkey: string = "mail.send";
+import nodemailer from "nodemailer";
 
-const user = process.env.USER
-const pass= process.env.PASS
+const EXCHANGE = "mail.exchange";
+const QUEUE = "mail.queue";
+const ROUTING_KEY = "mail.send";
+
+const user = process.env.USER;
+const pass = process.env.PASS;
+
+if (!user || !pass) {
+  throw new Error("Mail credentials missing");
+}
+
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: { user, pass },
+});
 
 export async function startMailConsumer(): Promise<void> {
-    const channel = getChannel();
+  const channel = getChannel();
 
-    await channel.assertExchange(exchange, "direct", {
-        durable: true,
-    })
+  await channel.assertExchange(EXCHANGE, "direct", { durable: true });
+  await channel.assertQueue(QUEUE, { durable: true });
+  await channel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
 
-    await channel.assertQueue(queue, { durable: true })
+  console.log("Mail consumer waiting for messages");
 
-    await channel.bindQueue(queue, exchange, routingkey);
+  channel.consume(QUEUE, async (message) => {
+    if (!message) return;
 
-    console.log("Mail consumer started and waiting for messages");
+    try {
+      const { to, subject, body } = JSON.parse(
+        message.content.toString()
+      );
 
-    channel.consume(queue, async (message) => {
-        if (!message) return;
-        if(message){
-            try {
-                const { to,subject,body}= JSON.parse(message.content.toString())
-                const transporter = nodemailer.createTransport({
-                    host:"smtp.gmail.com",
-                    port:465,
-                    secure:true,
-                    auth:{
-                        user,
-                        pass,
-                    }
-                })
+      await transporter.sendMail({
+        from: `"EM MATLADUTUNAVU RA" <${user}>`,
+        to,
+        subject,
+        text: body,
+      });
 
-                await transporter.sendMail({
-                    from:"EM MATLADUTUNAVU RA - CHATT APP",
-                    to,
-                    subject,
-                    text:body,
-                })
-                console.log(`OTP mail sent to ${to} Succesfully`);
-                channel.ack(message);
-            } catch (error) {
-                console.log("failed to send OTP ",error);
-                
-            }
-        }
-    })
+      console.log(`Mail sent to ${to}`);
+      channel.ack(message);
+
+    } catch (error) {
+      console.error("Mail send failed:", error);
+
+     
+      channel.nack(message, false, false); // drop or send to DLQ
+    }
+  });
 }
