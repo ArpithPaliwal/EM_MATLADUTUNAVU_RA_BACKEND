@@ -16,6 +16,7 @@ export class ConversationRepository implements IConversationRepository {
     const [conversation] = await Conversation.create([createConversation], { session });
     return conversation;
   }
+  
   async checkExistingPrivateConversation(data: PrivateConversationDTO): Promise<any> {
     const { userId, memberId } = data;
     return await Conversation.findOne({

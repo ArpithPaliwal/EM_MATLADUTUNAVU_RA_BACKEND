@@ -15,7 +15,7 @@ const groupAvatarSchema = new Schema(
   { _id: false }
 );
 
-const conversationSchema = new Schema<IConversation>(
+const conversationSchema = new Schema(
   {
     type: {
       type: String,
