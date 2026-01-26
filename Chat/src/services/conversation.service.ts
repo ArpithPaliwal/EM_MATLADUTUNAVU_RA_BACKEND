@@ -20,7 +20,7 @@ import { getIO } from "../sockets/socket.server.js";
 function getTheOtherMemberId(members: string[], userId: string) {
     return members.find(m => m.toString() !== userId.toString())!;
 }
-const io=getIO()
+
 
 export class ConversationService implements IConversationService {
     constructor(private conversationrepository: IConversationRepository = new ConversationRepository(),
@@ -78,6 +78,7 @@ export class ConversationService implements IConversationService {
             }
             await session.commitTransaction();
             console.log("coversation service last ",conversation);
+            const io = getIO();
             emitConversationsInvalidate(io, memberId);
             return conversation;
         } catch (error) {
