@@ -106,3 +106,11 @@ socket.on("conversation:read", async ({ conversationId, lastReadMessageId }) => 
 
 
 
+
+export const emitConversationsInvalidate = (
+  io: Server,
+  userId: string
+) => {
+  io.to(`user:${userId}`).emit("conversations:invalidate");
+  
+};

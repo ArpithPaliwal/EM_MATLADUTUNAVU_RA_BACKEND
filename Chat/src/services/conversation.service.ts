@@ -13,10 +13,14 @@ import type { ConversationWithDetails } from "../dtos/responseGetConversatiuonLi
 import type { ConversationBase } from "../dtos/responseGetConversationListBase.js";
 import type { UserBulkResponse } from "../dtos/userDetailsSummary.dto.js";
 import { Conversation } from "../models/conversation.model.js";
+import { emitConversationsInvalidate } from "../sockets/events/conversation.events.js";
+import { getIO } from "../sockets/socket.server.js";
+
+
 function getTheOtherMemberId(members: string[], userId: string) {
     return members.find(m => m.toString() !== userId.toString())!;
 }
-
+const io=getIO()
 
 export class ConversationService implements IConversationService {
     constructor(private conversationrepository: IConversationRepository = new ConversationRepository(),
@@ -74,7 +78,7 @@ export class ConversationService implements IConversationService {
             }
             await session.commitTransaction();
             console.log("coversation service last ",conversation);
-            
+            emitConversationsInvalidate(io, memberId);
             return conversation;
         } catch (error) {
             await session.abortTransaction();
