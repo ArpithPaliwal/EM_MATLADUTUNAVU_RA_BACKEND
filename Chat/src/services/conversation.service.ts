@@ -12,9 +12,6 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js
 import type { ConversationWithDetails } from "../dtos/responseGetConversatiuonListWithDetails.js";
 import type { ConversationBase } from "../dtos/responseGetConversationListBase.js";
 import type { UserBulkResponse } from "../dtos/userDetailsSummary.dto.js";
-import { Conversation } from "../models/conversation.model.js";
-import { emitConversationsInvalidate } from "../sockets/events/conversation.events.js";
-import { getIO } from "../sockets/socket.server.js";
 
 
 function getTheOtherMemberId(members: string[], userId: string) {
@@ -78,9 +75,8 @@ export class ConversationService implements IConversationService {
             }
             await session.commitTransaction();
             console.log("coversation service last ",conversation);
-            const io = getIO();
-            emitConversationsInvalidate(io, memberId);
-            return conversation;
+            
+            return [conversation,memberId];
         } catch (error) {
             await session.abortTransaction();
 

@@ -6,6 +6,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import fs from "fs";
+import { emitConversationsInvalidate } from "../sockets/events/conversation.events.js";
+import { getIO } from "../sockets/socket.server.js";
 
 export class ConversationController implements IConversationController {
   constructor(private conversationService: IConversationService = new ConversationService()) { }
@@ -14,7 +16,9 @@ export class ConversationController implements IConversationController {
     const { memberUsername } = req.body;
     const userId = req.user?._id
     console.log("USER ID FROM REQ.USER:", userId);
-    const conversation = await this.conversationService.createPrivateConversation({ memberUsername, userId, createdBy: userId });
+    const [conversation,memberId] = await this.conversationService.createPrivateConversation({ memberUsername, userId, createdBy: userId });
+    const io = getIO();
+            emitConversationsInvalidate(io, memberId);
     return res.status(201).json(new ApiResponse(201, conversation, "Private conversation created successfully"));
   })
   
