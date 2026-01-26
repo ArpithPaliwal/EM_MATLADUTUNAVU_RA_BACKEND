@@ -14,6 +14,9 @@ export class ConversationRepository implements IConversationRepository {
       createdBy,
     }
     const [conversation] = await Conversation.create([createConversation], { session });
+    
+    console.log("coversation repo ",conversation);
+    
     return conversation;
   }
   

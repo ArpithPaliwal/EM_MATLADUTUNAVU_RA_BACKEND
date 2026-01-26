@@ -69,11 +69,12 @@ export class ConversationService implements IConversationService {
 
             session.startTransaction();
             const conversation = await this.conversationrepository.createPrivateConversation(updatedData, session);
-            if (Conversation) {
+            if (conversation) {
                 await this.conversationParticipantService.createConversationParticipants({ userIds: [userId, memberId], conversationId: conversation?._id }, session);
             }
             await session.commitTransaction();
-
+            console.log("coversation service last ",conversation);
+            
             return conversation;
         } catch (error) {
             await session.abortTransaction();

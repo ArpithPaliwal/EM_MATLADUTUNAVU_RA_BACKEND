@@ -8,8 +8,11 @@ export class ConversationParticipantRepository implements IConversationParticipa
 
         const { userIds, conversationId } = data;
         const docs = userIds.map(userId => ({ userId, conversationId }));
-
-        await ConversationParticipant.insertMany(docs, { session });
+        console.log("docs ",docs);
+        
+        const createdCoversationParticipant=await ConversationParticipant.insertMany(docs, { session });
+        console.log("conversation participant repo ",createdCoversationParticipant);
+        
     }
     async updateConversationParticipants(_id: string, userId: string, conversationId: string, senderId: string): Promise<void> {
         console.log("updated undread ");
