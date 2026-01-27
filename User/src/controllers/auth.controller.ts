@@ -244,4 +244,29 @@ export class AuthController implements IAuthController {
       )
     } 
   )
+  refreshToken = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new ApiError(401, "Refresh token is missing");
+    }
+
+    const result = await this.authService.refreshToken(refreshToken);
+
+    res.cookie("accessToken", result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
+
+    return res.status(200).json(
+      new ApiResponse(200, null, "Access token refreshed successfully")
+    );
+  }
+);
+
 }
+

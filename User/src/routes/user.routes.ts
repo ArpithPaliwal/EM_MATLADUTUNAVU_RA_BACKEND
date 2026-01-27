@@ -8,7 +8,7 @@ const authController = new AuthController();
 router.route("/signupInitialize").post(upload.single("avatar"),authController.signupInitiate);
 router.route("/signupVerifyCode").post(authController.signupVerifyCode);
 router.route("/login").post(authController.login);
-// router.route("/refreshToken").post(authController.refreshToken);
+router.route("/refreshToken").post(authController.refreshToken);
 router.route("/checkUsernameAvailability").post(authController.checkUsernameAvailability);
 router.route("/updateUsername").patch(verifyJWT,authController.updateUsername);
 router.route("/updateAvatar").patch(verifyJWT,upload.single("avatar"),authController.updateAvatar);

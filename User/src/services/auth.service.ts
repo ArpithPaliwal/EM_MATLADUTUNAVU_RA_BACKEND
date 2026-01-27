@@ -19,6 +19,8 @@ import type { LoginDTO } from "../dtos/login.dto.js";
 import { rateLimit } from "../redis/redisRateLimit.service.js";
 import type { UserDetailsSummaryDTO } from "../dtos/userDetailsSummary.dto.js";
 import { redisClient } from "../redis/index.js";
+import jwt from "jsonwebtoken";
+import  {User}   from "../models/user.model.js";
 
 const tempFolder = path.resolve("public", "temp");
 export class AuthService implements IAuthService {
@@ -293,5 +295,32 @@ export class AuthService implements IAuthService {
 
         return users.map((u: any) => u.username);
     }
+
+
+    async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+    try {
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET!
+      ) as { userId: string };
+
+      const user = await User.findById(decoded.userId);
+
+      if (!user) {
+        throw new ApiError(401, "Invalid refresh token");
+      }
+
+      const accessToken = jwt.sign(
+        { userId: user._id },
+        process.env.ACCESS_TOKEN_SECRET!,
+        { expiresIn: "1d" }
+      );
+
+      return { accessToken };
+
+    } catch {
+      throw new ApiError(401, "Invalid or expired refresh token");
+    }
+  }
     
 }
